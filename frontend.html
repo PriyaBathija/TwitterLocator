@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var twitterHandle = document.getElementById("twitterHandle");
+        reloadMapData(twitterHandle.value);
+      });
+    });
+
+    var map;
+    var currentMarkers = [];
+    var infoWindow;
+    var infoWindowContent = "";
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 43.653, lng: -79.382 },
+        zoom: 3
+      });
+
+      infoWindow = new google.maps.InfoWindow({
+        content: infoWindowContent
+      });
+    }
+
+    function clearMarkers() {
+      for (var i = 0; i < currentMarkers.length; i++) {
+        currentMarkers[i].setMap(null);
+      }
+      currentMarkers = [];
+    }
+
+    function reloadMapData(twitterHandle) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          markers = JSON.parse(this.response);
+          clearMarkers();
+          applyMarkers(markers);
+        }
+      };
+      xhttp.open("GET", "map.php?username=" + twitterHandle, true);
+      xhttp.send();
+    }
+
+    function applyMarkers(markers) {
+      var marker;
+      for (var i = 0; i < markers.length; i++){
+        var tweetText = markers[i].text;
+        var lng = markers[i].lng;
+        var lat = markers[i].lat;
+        var source = markers[i].source;
+        marker = new google.maps.Marker({
+          position: {'lng':lng, 'lat':lat},
+          map: map,
+          title: 'Hello World!'
+        });
+        google.maps.event.addListener(marker,'click', (function(marker,tweetText,source, infowindow){
+          return function() {
+            infowindow.setContent(tweetText + " " + source);
+            infowindow.open(map,marker);
+        };})(marker,tweetText,source,infoWindow));
+        currentMarkers.push(marker);
+      }
+    }
+    </script>
+
+    <form id="form">
+      Name (max 10 characters): <input type="text" id="twitterHandle" size="20">
+      <input type="submit" value="Submit">
+    </form>
+    <div id="map"></div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIMnibDecOLdbDzmCX_IaLQLscdVOGwmA&callback=initMap"
+    async defer></script>
+  </body>
+</html>
